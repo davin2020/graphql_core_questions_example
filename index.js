@@ -2,6 +2,8 @@ var express = require('express');
 var { graphqlHTTP } = require('express-graphql');
 var { buildSchema } = require('graphql');
 
+//DAV 28march2021 this is working fine for courses
+
 // Construct a schema, using GraphQL schema language
 var schema = buildSchema(`
   "All available queries"
@@ -39,6 +41,47 @@ var schema = buildSchema(`
     name: String
   }
 `);
+
+// Dav schema for questions - nnames here must be valid within schema
+var questionSchema = buildSchema(`
+  "All available queries"
+  type Query {
+    "Fetch a single Question by ID"
+    question(q_id: Int!): Question
+    "Fetch a list of all questions"
+    questions: [Question]
+  }
+  "All available mutations"
+  type Mutation {
+    "Update the question based on ID"
+    updateQuestion(q_id: Int!, question: String!): Question
+  }
+  "A Question object"
+  type Question {
+    "Question ID"
+    q_id: Int
+    "The actual question"
+    question: String
+    "Order of Questions for GP Core form"
+    gp_order: Int
+    "The type of points, either ascending 123 or descending 321"
+    points_type: Int
+    "The points id, currently the same as type of points"
+    points_id: Int
+    "An array of possible AnswerLabel objects"
+    possibleAnswers: [AnswerLabel]
+  }
+  "An AnswerLabel object"
+  type AnswerLabel {
+    "The AnswerLabel scale ID"
+    scale_id: Int
+    "Label of the Answer"
+    label: String
+    "Points scored for choosing this answer"
+    points: Int
+  }
+`);
+
 
 // A dummy database
 var coursesData = [
@@ -87,11 +130,67 @@ var coursesData = [
     }
 ];
 
+//Dav added 28march2021, modelled on HeidiSQL data
+const coreQuestionData = [
+    {
+        q_id: 1,  
+        question: "I have felt tense, anxious or nervous",
+        gp_order: 1,
+        points_type: 123,
+        points_id: 123,
+        possibleAnswers: [
+            {
+                scale_id: 10,
+                label: "Not all all",
+                points: 0
+            },
+            {
+                scale_id: 20,
+                label: "Only occasionally",
+                points: 1
+            }
+            ,
+            {
+                scale_id: 30,
+                label: "Sometimes",
+                points: 2
+            }
+        ]
+    },
+    {
+        q_id: 2,  
+        question: " I have felt I have someone to turn to for support when needed",
+        gp_order: 2,
+        points_type: 321,
+        points_id: 321,
+        possibleAnswers: [
+            {
+                scale_id: 10,
+                label: "Not all all",
+                points: 4
+            },
+            {
+                scale_id: 20,
+                label: "Only occasionally",
+                points: 3
+            }
+            ,
+            {
+                scale_id: 30,
+                label: "Sometimes",
+                points: 2
+            }
+        ]
+    },
+];
+
+// Dav get single course  by id
 var getCourse = (args) => {
     var id = args.id;
     return coursesData.filter(course => course.id === id)[0];
 }
 
+// Dav get all courses, filtered by topic if provided
 var getCourses = (args) => {
     if (args.topic) {
         var topic = args.topic;
@@ -111,16 +210,71 @@ var updateCourseTopic = ({id, topic}) => {
     return coursesData.filter(course => course.id === id)[0];
 }
 
+// Dav Core Question stuff
+var getQuestion = (args) => {
+    var q_id = args.q_id;
+    return coreQuestionData.filter(question => question.q_id === q_id)[0];
+}
+
+var getQuestions = (args) => {
+    // if (args.topic) {
+    //     var topic = args.topic;
+    //     return coursesData.filter(course => course.topic === topic);
+    // } else {
+    //     return coreQuestionData;
+    // }
+    return coreQuestionData;
+}
+
+// var updateQuestionLabel = ({q_id, newQuestion}) => {
+//     coreQuestionData.map(questionItem => {
+//         if (questionItem.q_id === q_id) {
+//             console.log("found match")
+//             questionItem.question = newQuestion;
+//             return questionItem;
+//         }
+//     });
+//     return coreQuestionData.filter(questionItem => questionItem.q_id === q_id)[0];
+// }
+
+// this isnt working, too many words called 'question' !
+//also some issues in console log but no thtis one being printed out, why?
+var updateQuestionLabel = ({q_id, newquestion}) => {
+    coreQuestionData.map(question => {
+        if (question.q_id === q_id) {
+            console.log("found question match")
+            question.question = newquestion;
+            return question;
+        }
+    });
+    return coreQuestionData.filter(question => question.q_id === q_id)[0];
+}
+
+
 // The root provides a resolver function for each API endpoint
+//these keywords on left of : are like the endpoint and MUST correspond with the keywords within the const/var schema on line 6 'var schema = buildSchema', while on the right are the variables which contain the results/callbacks of functions eg 'var getCourse' on line 91 etc
 var root = {
     course: getCourse,
     courses: getCourses,
     updateCourseTopic: updateCourseTopic
 };
 
+// Dav root for Questions
+const questionRoot = {
+    question: getQuestion,
+    questions: getQuestions,
+    updateQuestion: updateQuestionLabel
+};
+
+
+//how to output results of getLearners ?
+// console.log('output of getLearners: ')
+// console.log(getLearners)
+
 var app = express();
 
-app.use('/graphql', graphqlHTTP({
+//FYI rootValue is the graphqlResolvers above
+app.use('/graphql2', graphqlHTTP({
     schema: schema,
     rootValue: root,
     // Enable the GraphiQL UI
@@ -136,5 +290,24 @@ app.use('/graphql', graphqlHTTP({
 
 }));
 
+app.use('/graphql', graphqlHTTP({
+    schema: questionSchema,
+    rootValue: questionRoot,
+    // Enable the GraphiQL UI
+    graphiql: {
+        defaultQuery: "query {\n" +
+            "  questions {\n" +
+            "    q_id\n" +
+            "    question\n" +
+            "    points_type\n" +
+            "  }\n" +
+            "}"
+    },
+
+}));
+
 app.listen(4000);
 console.log('Running a GraphQL API server at http://localhost:4000/graphql');
+
+// NOTES
+// instead of having multiplel end points, u only have 1 Endpoint and u can ask for whatever u want from it ie theres one single 'smart' endpoint, generally used to serve data in json format
