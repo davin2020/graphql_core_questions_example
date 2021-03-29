@@ -3,6 +3,9 @@ var { graphqlHTTP } = require('express-graphql');
 var { buildSchema } = require('graphql');
 
 //DAV 28march2021 this is working fine for courses
+// Dav 28 march queries for Questions working ok but single mutation is not working - try to rewrite Course mutation first
+// ToDO - updaet Readme to refer to Questions insetad of Courses; then add in connection to MySQL db
+
 
 // Construct a schema, using GraphQL schema language
 var schema = buildSchema(`
@@ -200,15 +203,23 @@ var getCourses = (args) => {
     }
 }
 
-var updateCourseTopic = ({id, topic}) => {
-    coursesData.map(course => {
-        if (course.id === id) {
-            course.topic = topic;
-            return course;
+// orange keywords id and topic probably have to match the schema above!
+var updateCourseTopicVar = ({id, topic}) => {
+    coursesData.map(courseItem => {
+        if (courseItem.id === id) {
+            console.log('found courseItem'); //tiis is output to Node console not browser!
+            courseItem.topic = topic;
+            return courseItem;
         }
     });
-    return coursesData.filter(course => course.id === id)[0];
+    //end of mapping fn for each item in array
+    //this finds the newly updated course based on id and returns it, can return undefined if id & thus course doesnt exist - orange keyword course is not related to orange keyword courseItem but is essentially doing the same thing
+    var result = coursesData.filter(course => course.id === id)[0]
+    console.log('heres result');
+    console.log(result); //returns undefined if id doenst exist
+    return result;
 }
+
 
 // Dav Core Question stuff
 var getQuestion = (args) => {
@@ -256,7 +267,7 @@ var updateQuestionLabel = ({q_id, newquestion}) => {
 var root = {
     course: getCourse,
     courses: getCourses,
-    updateCourseTopic: updateCourseTopic
+    updateCourseTopic: updateCourseTopicVar
 };
 
 // Dav root for Questions
@@ -307,7 +318,7 @@ app.use('/graphql', graphqlHTTP({
 }));
 
 app.listen(4000);
-console.log('Running a GraphQL API server at http://localhost:4000/graphql');
+console.log('Running a GraphQL API server at http://localhost:4000/graphql for Core Questions');
 
 // NOTES
 // instead of having multiplel end points, u only have 1 Endpoint and u can ask for whatever u want from it ie theres one single 'smart' endpoint, generally used to serve data in json format
