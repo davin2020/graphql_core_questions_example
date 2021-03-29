@@ -2,49 +2,10 @@ var express = require('express');
 var { graphqlHTTP } = require('express-graphql');
 var { buildSchema } = require('graphql');
 
-//DAV 28march2021 this is working fine for courses
-// Dav 28 march queries for Questions working ok but single mutation is not working - try to rewrite Course mutation first
-// ToDO - updaet Readme to refer to Questions insetad of Courses; then add in connection to MySQL db
-
+// Dav t29march - queries and single mutation for CoreQuestions are now working ok using array as dummy db
+// ToDO - updaet Readme to refer to Questions insetad of Courses; then add in connection to MySQL db; do DB first then update readme with results of returned GQL calls
 
 // Construct a schema, using GraphQL schema language
-var schema = buildSchema(`
-  "All available queries"
-  type Query {
-    "Fetch a single course by ID"
-    course(id: Int!): Course
-    "Fetch a list of courses based on topic, provide no topic to get all courses"
-    courses(topic: String): [Course]
-  }
-  "All available mutations"
-  type Mutation {
-    "Update the topic of a given course based on ID"
-    updateCourseTopic(id: Int!, topic: String!): Course
-  }
-  "A course object"
-  type Course {
-    "Course ID"
-    id: Int
-    "The name of the course"
-    title: String
-    "An array of trainer objects"
-    trainer: [Trainer]
-    "Short text description of course content"
-    description: String
-    "A topic tag"
-    topic: String
-    "Link to the course on the academy site"
-    url: String
-  }
-  "A trainer object"
-  type Trainer {
-    "The trainer ID"
-    id: Int
-    "First and last name"
-    name: String
-  }
-`);
-
 // Dav schema for questions - nnames here must be valid within schema
 var questionSchema = buildSchema(`
   "All available queries"
@@ -85,54 +46,7 @@ var questionSchema = buildSchema(`
   }
 `);
 
-
-// A dummy database
-var coursesData = [
-    {
-        id: 1,
-        title: 'Full Stack Track',
-        trainer: [
-            {
-                id: 2,
-                name: 'Ashley Coles'
-            },
-            {
-                id: 1,
-                name: 'Mike Oram'
-            }
-        ],
-        description: 'In 16 weeks, we’ll teach you all you need to land your first job as a junior software developer.',
-        topic: 'Full Stack',
-        url: 'https://mayden.academy/full-stack-track/'
-    },
-    {
-        id: 2,
-        title: 'Working with Developers Workshop',
-        trainer: [
-            {
-                id: 1,
-                name: 'Mike Oram'
-            }
-        ],
-        description: 'Do you work closely with software developers in your business, but don’t really understand the world of coding? Would you like your projects to run more effectively?',
-        topic: 'Working with Developers',
-        url: 'https://mayden.academy/working-with-developers-workshop/'
-    },
-    {
-        id: 3,
-        title: 'Introduction to WordPress for Developers',
-        trainer: [
-            {
-                id: 2,
-                name: 'Ashley Coles'
-            }
-        ],
-        description: 'This one day online workshop is for developers who would like to learn more about working with WordPress.',
-        topic: 'WordPress',
-        url: 'https://mayden.academy/introduction-to-wordpress-for-developers/'
-    }
-];
-
+//temp dummy db
 //Dav added 28march2021, modelled on HeidiSQL data
 const coreQuestionData = [
     {
@@ -187,40 +101,6 @@ const coreQuestionData = [
     },
 ];
 
-// Dav get single course  by id
-var getCourse = (args) => {
-    var id = args.id;
-    return coursesData.filter(course => course.id === id)[0];
-}
-
-// Dav get all courses, filtered by topic if provided
-var getCourses = (args) => {
-    if (args.topic) {
-        var topic = args.topic;
-        return coursesData.filter(course => course.topic === topic);
-    } else {
-        return coursesData;
-    }
-}
-
-// orange keywords id and topic probably have to match the schema above!
-var updateCourseTopicVar = ({id, topic}) => {
-    coursesData.map(courseItem => {
-        if (courseItem.id === id) {
-            console.log('found courseItem'); //tiis is output to Node console not browser!
-            courseItem.topic = topic;
-            return courseItem;
-        }
-    });
-    //end of callback mapping fn for each item in array
-    //this finds the newly updated course based on id and returns it, can return undefined if id & thus course doesnt exist - orange keyword course is not related to orange keyword courseItem but is essentially doing the same thing
-    var result = coursesData.filter(course => course.id === id)[0]
-    console.log('heres result');
-    console.log(result); //returns undefined if id doenst exist
-    return result;
-}
-
-
 // Dav Core CoreQuestion stuff
 var getQuestion = (args) => {
     var q_id = args.q_id;
@@ -237,6 +117,7 @@ var getQuestions = (args) => {
     return coreQuestionData;
 }
 
+
 // var updateQuestionLabel = ({q_id, newQuestion}) => {
 //     coreQuestionData.map(questionItem => {
 //         if (questionItem.q_id === q_id) {
@@ -248,7 +129,7 @@ var getQuestions = (args) => {
 //     return coreQuestionData.filter(questionItem => questionItem.q_id === q_id)[0];
 // }
 
-// this isnt working, too many words called 'question' !
+// this ISNT working, too many words called 'question' !
 //also some issues in console log but no thtis one being printed out, why?
 var updateQuestionLabel = ({q_id, newquestion}) => {
     coreQuestionData.map(question => {
@@ -260,6 +141,7 @@ var updateQuestionLabel = ({q_id, newquestion}) => {
     });
     return coreQuestionData.filter(question => question.q_id === q_id)[0];
 }
+
 
 //m29march Dav -  this is now working ok!
 // orange keywords id and topic probably have to match the schema above!
@@ -279,16 +161,8 @@ var updateQuestionVar = ({q_id, question}) => {
     return result;
 }
 
-
-
 // The root provides a resolver function for each API endpoint
 //these keywords on left of : are like the endpoint and MUST correspond with the keywords within the const/var schema on line 6 'var schema = buildSchema', while on the right are the variables which contain the results/callbacks of functions eg 'var getCourse' on line 91 etc
-var root = {
-    course: getCourse,
-    courses: getCourses,
-    updateCourseTopic: updateCourseTopicVar
-};
-
 // Dav root for Questions
 const questionRoot = {
     question: getQuestion,
@@ -297,31 +171,14 @@ const questionRoot = {
     updateQuestion: updateQuestionVar
 };
 
-
-//how to output results of getLearners ?
+//how to output results of getLearners ? will get logged to Node console!
 // console.log('output of getLearners: ')
 // console.log(getLearners)
 
 var app = express();
 
-//Route for Course stuff - FYI rootValue is the graphqlResolvers above
-app.use('/graphql2', graphqlHTTP({
-    schema: schema,
-    rootValue: root,
-    // Enable the GraphiQL UI
-    graphiql: {
-        defaultQuery: "query {\n" +
-            "  course(id: 1) {\n" +
-            "    title\n" +
-            "    trainer\n" +
-            "    url\n" +
-            "  }\n" +
-            "}"
-    },
-
-}));
-
 // Route for CoreQuestion stuff
+// FYI rootValue is the graphqlResolvers above
 app.use('/graphql', graphqlHTTP({
     schema: questionSchema,
     rootValue: questionRoot,
@@ -335,11 +192,10 @@ app.use('/graphql', graphqlHTTP({
             "  }\n" +
             "}"
     },
-
 }));
 
-app.listen(4000);
-console.log('Running a GraphQL API server at http://localhost:4000/graphql for Core Questions');
+app.listen(4004);
+console.log('Running a GraphQL API server at http://localhost:4004/graphql for Core Questions');
 
 // NOTES
 // instead of having multiplel end points, u only have 1 Endpoint and u can ask for whatever u want from it ie theres one single 'smart' endpoint, generally used to serve data in json format
