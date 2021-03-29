@@ -49,23 +49,23 @@ var schema = buildSchema(`
 var questionSchema = buildSchema(`
   "All available queries"
   type Query {
-    "Fetch a single Question by ID"
-    question(q_id: Int!): Question
+    "Fetch a single CoreQuestion by ID"
+    question(q_id: Int!): CoreQuestion
     "Fetch a list of all questions"
-    questions: [Question]
+    questions: [CoreQuestion]
   }
   "All available mutations"
   type Mutation {
     "Update the question based on ID"
-    updateQuestion(q_id: Int!, question: String!): Question
+    updateQuestion(q_id: Int!, question: String!): CoreQuestion
   }
-  "A Question object"
-  type Question {
-    "Question ID"
+  "A CoreQuestion object"
+  type CoreQuestion {
+    "CoreQuestion ID"
     q_id: Int
     "The actual question"
     question: String
-    "Order of Questions for GP Core form"
+    "Order of questions on GP Core form"
     gp_order: Int
     "The type of points, either ascending 123 or descending 321"
     points_type: Int
@@ -212,7 +212,7 @@ var updateCourseTopicVar = ({id, topic}) => {
             return courseItem;
         }
     });
-    //end of mapping fn for each item in array
+    //end of callback mapping fn for each item in array
     //this finds the newly updated course based on id and returns it, can return undefined if id & thus course doesnt exist - orange keyword course is not related to orange keyword courseItem but is essentially doing the same thing
     var result = coursesData.filter(course => course.id === id)[0]
     console.log('heres result');
@@ -221,7 +221,7 @@ var updateCourseTopicVar = ({id, topic}) => {
 }
 
 
-// Dav Core Question stuff
+// Dav Core CoreQuestion stuff
 var getQuestion = (args) => {
     var q_id = args.q_id;
     return coreQuestionData.filter(question => question.q_id === q_id)[0];
@@ -261,6 +261,25 @@ var updateQuestionLabel = ({q_id, newquestion}) => {
     return coreQuestionData.filter(question => question.q_id === q_id)[0];
 }
 
+//m29march Dav -  this is now working ok!
+// orange keywords id and topic probably have to match the schema above!
+var updateQuestionVar = ({q_id, question}) => {
+    coreQuestionData.map(questionItem => {
+        if (questionItem.q_id === q_id) {
+            console.log('found questionItem by q_id'); //tiis is output to Node console not browser!
+            questionItem.question = question;
+            return questionItem;
+        }
+    });
+    //end of callback mapping fn for each item in array
+    //this finds the newly updated course based on id and returns it, can return undefined if id & thus course doesnt exist - orange keyword course is not related to orange keyword questionItem but is essentially doing the same thing
+    var result = coreQuestionData.filter(questionItem2 => questionItem2.q_id === q_id)[0]
+    console.log('heres result questionItem2');
+    console.log(result); //returns undefined if id doenst exist
+    return result;
+}
+
+
 
 // The root provides a resolver function for each API endpoint
 //these keywords on left of : are like the endpoint and MUST correspond with the keywords within the const/var schema on line 6 'var schema = buildSchema', while on the right are the variables which contain the results/callbacks of functions eg 'var getCourse' on line 91 etc
@@ -274,7 +293,8 @@ var root = {
 const questionRoot = {
     question: getQuestion,
     questions: getQuestions,
-    updateQuestion: updateQuestionLabel
+    // updateQuestion: updateQuestionLabel
+    updateQuestion: updateQuestionVar
 };
 
 
@@ -284,7 +304,7 @@ const questionRoot = {
 
 var app = express();
 
-//FYI rootValue is the graphqlResolvers above
+//Route for Course stuff - FYI rootValue is the graphqlResolvers above
 app.use('/graphql2', graphqlHTTP({
     schema: schema,
     rootValue: root,
@@ -301,6 +321,7 @@ app.use('/graphql2', graphqlHTTP({
 
 }));
 
+// Route for CoreQuestion stuff
 app.use('/graphql', graphqlHTTP({
     schema: questionSchema,
     rootValue: questionRoot,
