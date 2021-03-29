@@ -2,139 +2,200 @@ var express = require('express');
 var { graphqlHTTP } = require('express-graphql');
 var { buildSchema } = require('graphql');
 
+// Dav t29march - queries and single mutation for CoreQuestions are now working ok using array as dummy db
+// ToDO - updaet Readme to refer to Questions insetad of Courses; then add in connection to MySQL db; do DB first then update readme with results of returned GQL calls
+
 // Construct a schema, using GraphQL schema language
-var schema = buildSchema(`
+// Dav schema for questions - nnames here must be valid within schema
+var questionSchema = buildSchema(`
   "All available queries"
   type Query {
-    "Fetch a single course by ID"
-    course(id: Int!): Course
-    "Fetch a list of courses based on topic, provide no topic to get all courses"
-    courses(topic: String): [Course]
+    "Fetch a single CoreQuestion by ID"
+    question(q_id: Int!): CoreQuestion
+    "Fetch a list of all questions"
+    questions: [CoreQuestion]
   }
   "All available mutations"
   type Mutation {
-    "Update the topic of a given course based on ID"
-    updateCourseTopic(id: Int!, topic: String!): Course
+    "Update the question based on ID"
+    updateQuestion(q_id: Int!, question: String!): CoreQuestion
   }
-  "A course object"
-  type Course {
-    "Course ID"
-    id: Int
-    "The name of the course"
-    title: String
-    "An array of trainer objects"
-    trainer: [Trainer]
-    "Short text description of course content"
-    description: String
-    "A topic tag"
-    topic: String
-    "Link to the course on the academy site"
-    url: String
+  "A CoreQuestion object"
+  type CoreQuestion {
+    "CoreQuestion ID"
+    q_id: Int
+    "The actual question"
+    question: String
+    "Order of questions on GP Core form"
+    gp_order: Int
+    "The type of points, either ascending 123 or descending 321"
+    points_type: Int
+    "The points id, currently the same as type of points"
+    points_id: Int
+    "An array of possible AnswerLabel objects"
+    possibleAnswers: [AnswerLabel]
   }
-  "A trainer object"
-  type Trainer {
-    "The trainer ID"
-    id: Int
-    "First and last name"
-    name: String
+  "An AnswerLabel object"
+  type AnswerLabel {
+    "The AnswerLabel scale ID"
+    scale_id: Int
+    "Label of the Answer"
+    label: String
+    "Points scored for choosing this answer"
+    points: Int
   }
 `);
 
-// A dummy database
-var coursesData = [
+//temp dummy db
+//Dav added 28march2021, modelled on HeidiSQL data
+const coreQuestionData = [
     {
-        id: 1,
-        title: 'Full Stack Track',
-        trainer: [
+        q_id: 1,  
+        question: "I have felt tense, anxious or nervous",
+        gp_order: 1,
+        points_type: 123,
+        points_id: 123,
+        possibleAnswers: [
             {
-                id: 2,
-                name: 'Ashley Coles'
+                scale_id: 10,
+                label: "Not all all",
+                points: 0
             },
             {
-                id: 1,
-                name: 'Mike Oram'
+                scale_id: 20,
+                label: "Only occasionally",
+                points: 1
             }
-        ],
-        description: 'In 16 weeks, we’ll teach you all you need to land your first job as a junior software developer.',
-        topic: 'Full Stack',
-        url: 'https://mayden.academy/full-stack-track/'
+            ,
+            {
+                scale_id: 30,
+                label: "Sometimes",
+                points: 2
+            }
+        ]
     },
     {
-        id: 2,
-        title: 'Working with Developers Workshop',
-        trainer: [
+        q_id: 2,  
+        question: " I have felt I have someone to turn to for support when needed",
+        gp_order: 2,
+        points_type: 321,
+        points_id: 321,
+        possibleAnswers: [
             {
-                id: 1,
-                name: 'Mike Oram'
+                scale_id: 10,
+                label: "Not all all",
+                points: 4
+            },
+            {
+                scale_id: 20,
+                label: "Only occasionally",
+                points: 3
             }
-        ],
-        description: 'Do you work closely with software developers in your business, but don’t really understand the world of coding? Would you like your projects to run more effectively?',
-        topic: 'Working with Developers',
-        url: 'https://mayden.academy/working-with-developers-workshop/'
+            ,
+            {
+                scale_id: 30,
+                label: "Sometimes",
+                points: 2
+            }
+        ]
     },
-    {
-        id: 3,
-        title: 'Introduction to WordPress for Developers',
-        trainer: [
-            {
-                id: 2,
-                name: 'Ashley Coles'
-            }
-        ],
-        description: 'This one day online workshop is for developers who would like to learn more about working with WordPress.',
-        topic: 'WordPress',
-        url: 'https://mayden.academy/introduction-to-wordpress-for-developers/'
-    }
 ];
 
-var getCourse = (args) => {
-    var id = args.id;
-    return coursesData.filter(course => course.id === id)[0];
+// Dav Core CoreQuestion stuff
+var getQuestion = (args) => {
+    var q_id = args.q_id;
+    return coreQuestionData.filter(question => question.q_id === q_id)[0];
 }
 
-var getCourses = (args) => {
-    if (args.topic) {
-        var topic = args.topic;
-        return coursesData.filter(course => course.topic === topic);
-    } else {
-        return coursesData;
-    }
+var getQuestions = (args) => {
+    // if (args.topic) {
+    //     var topic = args.topic;
+    //     return coursesData.filter(course => course.topic === topic);
+    // } else {
+    //     return coreQuestionData;
+    // }
+    return coreQuestionData;
 }
 
-var updateCourseTopic = ({id, topic}) => {
-    coursesData.map(course => {
-        if (course.id === id) {
-            course.topic = topic;
-            return course;
+
+// var updateQuestionLabel = ({q_id, newQuestion}) => {
+//     coreQuestionData.map(questionItem => {
+//         if (questionItem.q_id === q_id) {
+//             console.log("found match")
+//             questionItem.question = newQuestion;
+//             return questionItem;
+//         }
+//     });
+//     return coreQuestionData.filter(questionItem => questionItem.q_id === q_id)[0];
+// }
+
+// this ISNT working, too many words called 'question' !
+//also some issues in console log but no thtis one being printed out, why?
+var updateQuestionLabel = ({q_id, newquestion}) => {
+    coreQuestionData.map(question => {
+        if (question.q_id === q_id) {
+            console.log("found question match")
+            question.question = newquestion;
+            return question;
         }
     });
-    return coursesData.filter(course => course.id === id)[0];
+    return coreQuestionData.filter(question => question.q_id === q_id)[0];
+}
+
+
+//m29march Dav -  this is now working ok!
+// orange keywords id and topic probably have to match the schema above!
+var updateQuestionVar = ({q_id, question}) => {
+    coreQuestionData.map(questionItem => {
+        if (questionItem.q_id === q_id) {
+            console.log('found questionItem by q_id'); //tiis is output to Node console not browser!
+            questionItem.question = question;
+            return questionItem;
+        }
+    });
+    //end of callback mapping fn for each item in array
+    //this finds the newly updated course based on id and returns it, can return undefined if id & thus course doesnt exist - orange keyword course is not related to orange keyword questionItem but is essentially doing the same thing
+    var result = coreQuestionData.filter(questionItem2 => questionItem2.q_id === q_id)[0]
+    console.log('heres result questionItem2');
+    console.log(result); //returns undefined if id doenst exist
+    return result;
 }
 
 // The root provides a resolver function for each API endpoint
-var root = {
-    course: getCourse,
-    courses: getCourses,
-    updateCourseTopic: updateCourseTopic
+//these keywords on left of : are like the endpoint and MUST correspond with the keywords within the const/var schema on line 6 'var schema = buildSchema', while on the right are the variables which contain the results/callbacks of functions eg 'var getCourse' on line 91 etc
+// Dav root for Questions
+const questionRoot = {
+    question: getQuestion,
+    questions: getQuestions,
+    // updateQuestion: updateQuestionLabel
+    updateQuestion: updateQuestionVar
 };
+
+//how to output results of getLearners ? will get logged to Node console!
+// console.log('output of getLearners: ')
+// console.log(getLearners)
 
 var app = express();
 
+// Route for CoreQuestion stuff
+// FYI rootValue is the graphqlResolvers above
 app.use('/graphql', graphqlHTTP({
-    schema: schema,
-    rootValue: root,
+    schema: questionSchema,
+    rootValue: questionRoot,
     // Enable the GraphiQL UI
     graphiql: {
         defaultQuery: "query {\n" +
-            "  course(id: 1) {\n" +
-            "    title\n" +
-            "    trainer\n" +
-            "    url\n" +
+            "  questions {\n" +
+            "    q_id\n" +
+            "    question\n" +
+            "    points_type\n" +
             "  }\n" +
             "}"
     },
-
 }));
 
-app.listen(4000);
-console.log('Running a GraphQL API server at http://localhost:4000/graphql');
+app.listen(4004);
+console.log('Running a GraphQL API server at http://localhost:4004/graphql for Core Questions');
+
+// NOTES
+// instead of having multiplel end points, u only have 1 Endpoint and u can ask for whatever u want from it ie theres one single 'smart' endpoint, generally used to serve data in json format
