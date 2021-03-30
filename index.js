@@ -2,18 +2,63 @@ var express = require('express');
 var { graphqlHTTP } = require('express-graphql');
 var { buildSchema } = require('graphql');
 
+const mysql = require('mysql');
+
 // Dav t29march - queries and single mutation for CoreQuestions are now working ok using array as dummy db
 // ToDO - updaet Readme to refer to Questions insetad of Courses; then add in connection to MySQL db; do DB first then update readme with results of returned GQL calls
 
+// DB tutorial from https://morioh.com/p/c76d8fadc806
+// aka https://blog.logrocket.com/crud-with-node-graphql-react/
+
+// BUT t30march latest errors when running quetsions() query
+// "message": "Cannot read property 'query' of undefined",
+
+
+// Database stuff
+
+// app.use((req, res, next) => {
+//     req.mysqlDb = mysql.createConnection({
+//         host: '127.0.0.1',
+//         user: 'root',
+//         password: 'password',
+//         database: 'corelifedb'
+//     });
+//     req.mysqlDb.connect();
+//     console.log('Connected !');
+//     next();
+// });
+
+
+
+
+// === Graph QL stuff
+
 // Construct a schema, using GraphQL schema language
 // Dav schema for questions - nnames here must be valid within schema
+// var schema = buildSchema(  type Query {     
+//     hello: String   });
+
+// var schema = buildSchema(  type User {     
+//     id: String     
+//     name: String     
+//     job_title: String     
+//     email: String   }   
+//     type Query {     
+//         getUsers: [User],     
+//         getUserInfo(id: Int) : User   
+//     });
+
+
+// 30march2021 this schmea no longer matches my db!
 var questionSchema = buildSchema(`
   "All available queries"
   type Query {
-    "Fetch a single CoreQuestion by ID"
-    question(q_id: Int!): CoreQuestion
     "Fetch a list of all questions"
     questions: [CoreQuestion]
+    "Fetch a single CoreQuestion by ID"
+    question(q_id: Int!): CoreQuestion
+    "Fetch a single CoreQuestion by ID and see Info"
+    getQuestionInfo(q_id: Int!): CoreQuestion
   }
   "All available mutations"
   type Mutation {
@@ -30,10 +75,6 @@ var questionSchema = buildSchema(`
     gp_order: Int
     "The type of points, either ascending 123 or descending 321"
     points_type: Int
-    "The points id, currently the same as type of points"
-    points_id: Int
-    "An array of possible AnswerLabel objects"
-    possibleAnswers: [AnswerLabel]
   }
   "An AnswerLabel object"
   type AnswerLabel {
@@ -107,6 +148,20 @@ var getQuestion = (args) => {
     return coreQuestionData.filter(question => question.q_id === q_id)[0];
 }
 
+//intead of getting questsin from array above, query DB instead, using generic qeuryDB method to start with - this uses promises and then in var root
+const queryDB = (req, sql, args) => new Promise((resolve, reject) => {
+    console.log('inside const queryDB')
+    //whats value of req.mysqldb, is it actualy connnected??
+    req.mysqlDb.query(sql, args, (err, rows) => {
+        if (err) {
+            return reject(err);
+        }
+        console.log('next line')
+        rows.changedRows || rows.affectedRows || rows.insertId ? resolve(true) : resolve(rows);
+    });
+    console.log('seomthing else')
+});
+
 var getQuestions = (args) => {
     // if (args.topic) {
     //     var topic = args.topic;
@@ -175,13 +230,41 @@ const questionRoot = {
 // console.log('output of getLearners: ')
 // console.log(getLearners)
 
+// from connect.js
+let queryGetBasicQuestions = `
+    SELECT q_id, question, gp_order, points_type 
+    FROM ref_core_questions
+    `
+
+// var rootDB = {
+//   hello: () => "World"
+// };
+
+let queryGetQuestionsByID = `
+SELECT q_id, question, gp_order, points_type from ref_core_questions WHERE q_id = ? ;
+`
+
+// new db stuff - using promises and then, instead of async/await
+// green keywords neesd to be in schema i want to query!
+//none of these queries are actually workign! t30march
+var rootDB = {
+  questions: (args, req) => queryDB(req, queryGetBasicQuestions).then(data => data),
+  getQuestionInfo: (args, req) => queryDB(req, queryGetQuestionsByID, [args.q_id]).then(data => data[0])
+};
+console.log('after var rootDB: ');
+console.log(JSON.stringify(rootDB, null, 2)); //obj is empty atm
+
+
+
 var app = express();
 
 // Route for CoreQuestion stuff
 // FYI rootValue is the graphqlResolvers above
+// rootValue: was questionRoot
+// ISSUES here as db isnt being connected to!
 app.use('/graphql', graphqlHTTP({
     schema: questionSchema,
-    rootValue: questionRoot,
+    rootValue: rootDB,
     // Enable the GraphiQL UI
     graphiql: {
         defaultQuery: "query {\n" +
@@ -193,6 +276,39 @@ app.use('/graphql', graphqlHTTP({
             "}"
     },
 }));
+
+
+// Database stuff t30march2021 - can call this by going to http://localhost:4004/
+app.use((req, res, next) => {
+    req.mysqlDb = mysql.createConnection({
+        host: '127.0.0.1',
+        user: 'root',
+        password: 'password',
+        database: 'corelifedb'
+    });
+    req.mysqlDb.connect((err) => {
+        if (err) {
+            console.log('Error connecting to DB: ' + err);
+            // console.log(err);
+            return; 
+        }
+        console.log('Connected to MySQL DB!');
+        });
+    console.log('Line after DB is connected...'); // does this line get logged before DB connection is made, cos im not doing async await?
+    next();
+});
+
+// connection.connect((err) => {
+//     if (err) {
+//         console.log('Error connecting to DB: ');
+//         console.log(err);
+//         //throw err; // this will give u the stack trace & actual error msg  
+//         return; 
+//     }
+//     console.log('Connected to MySQL DB!');
+// });
+
+
 
 app.listen(4004);
 console.log('Running a GraphQL API server at http://localhost:4004/graphql for Core Questions');
