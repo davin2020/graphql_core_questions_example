@@ -2,10 +2,15 @@ var express = require('express');
 var { graphqlHTTP } = require('express-graphql');
 var { buildSchema } = require('graphql');
 
+const bodyParser = require('body-parser');
 const mysql = require('mysql');
 
 // Dav t29march - queries and single mutation for CoreQuestions are now working ok using array as dummy db
 // ToDO - updaet Readme to refer to Questions insetad of Courses; then add in connection to MySQL db; do DB first then update readme with results of returned GQL calls
+
+// connect sql with node only (no gql)
+// https://www.mysqltutorial.org/mysql-nodejs/connect/
+// https://www.sitepoint.com/using-node-mysql-javascript-client/
 
 // DB tutorial from https://morioh.com/p/c76d8fadc806
 // aka https://blog.logrocket.com/crud-with-node-graphql-react/
@@ -148,17 +153,47 @@ var getQuestion = (args) => {
     return coreQuestionData.filter(question => question.q_id === q_id)[0];
 }
 
-//intead of getting questsin from array above, query DB instead, using generic qeuryDB method to start with - this uses promises and then in var root
+//intead of getting questsin from array above, query DB instead, using generic queryDB method to start with - this uses promises and then in var root
+
+// tue eve - issue may be that promises are not working/setup properly here, so req.mysqlDb is still null/undefined as its not being waited for, so nothig else will work
+
+// NODE CONSOLE ERROR - (node:15816) UnhandledPromiseRejectionWarning: Unhandled promise rejection. This error originated either by throwing inside of an async function without a catch block, or by rejecting a promise which was not handled with .catch(). To terminate the node process on unhandled promise rejection, use the CLI flag `--unhandled-rejections=strict` (see https://nodejs.org/api/cli.html#cli_unhandled_rejections_mode). (rejection id: 2)
+// (node:15816) [DEP0018] DeprecationWarning: Unhandled promise rejections are deprecated. In the future, promise rejections that are not handled will terminate the Node.js process with a non-zero exit code.
+
+//how to use async/await here instead??
+//basically mysqlDB is null or undefined here and im not sure how to give it a value! 
 const queryDB = (req, sql, args) => new Promise((resolve, reject) => {
-    console.log('inside const queryDB')
+    console.log('inside const queryDB, value of req.mysqlDBBB:')
     //whats value of req.mysqldb, is it actualy connnected??
-    req.mysqlDb.query(sql, args, (err, rows) => {
-        if (err) {
-            return reject(err);
-        }
-        console.log('next line')
-        rows.changedRows || rows.affectedRows || rows.insertId ? resolve(true) : resolve(rows);
-    });
+    console.log(req.mysqlDb);
+    //console.log(JSON.stringify(req.mysqlDB, null, 2)); 
+
+    console.log('value of req:')
+    //console.log(JSON.stringify(req, null, 2));
+
+
+    // tue eve - now data is being outputted to node console at least ! do i need to reutrn data instead of the error/obj??
+    console.log('whats req.connection?')
+    //console.log(JSON.stringify(req.connection, null, 2)); 
+    // above line was causeing 'circular errror'
+
+
+// ISSUE = here! 
+// TypeError: Cannot read property 'query' of undefined
+    //req.mysqlDb.queryDB() 
+    //  req.mysqlDB is undefined, but why??
+    //what is mysqlDb??  its supposed to be db connection but inside req obj so it can be passed around?
+    //why is it null ?? how to make it not null and add it to request object??
+    // req.mysqlDB
+
+    // req.mysqlDb.query(sql, args, (err, rows) => {
+    //     if (err) {
+    //         return reject(err);
+    //     }
+    //     console.log('next line')
+    //     rows.changedRows || rows.affectedRows || rows.insertId ? resolve(true) : resolve(rows);
+    // });
+
     console.log('seomthing else')
 });
 
@@ -186,17 +221,90 @@ var getQuestions = (args) => {
 
 // this ISNT working, too many words called 'question' !
 //also some issues in console log but no thtis one being printed out, why?
-var updateQuestionLabel = ({q_id, newquestion}) => {
-    coreQuestionData.map(question => {
-        if (question.q_id === q_id) {
-            console.log("found question match")
-            question.question = newquestion;
-            return question;
-        }
-    });
-    return coreQuestionData.filter(question => question.q_id === q_id)[0];
-}
+// var updateQuestionLabel = ({q_id, newquestion}) => {
+//     coreQuestionData.map(question => {
+//         if (question.q_id === q_id) {
+//             console.log("found question match")
+//             question.question = newquestion;
+//             return question;
+//         }
+//     });
+//     return coreQuestionData.filter(question => question.q_id === q_id)[0];
+// }
 
+// tue eve
+// getQuestionInfo: (args, req) => queryDB(req, queryGetQuestionsByID, [args.q_id]).then(data => data[0])
+
+//minor issue - this is meant to get a question by id, but is currently returning all quetsions
+// this is workign and outputs values to node console but not to graphql console!
+var getQuestionInfo2 = async (args, req) => {
+    //connect to mysql here
+    const connection = mysql.createConnection({
+        host: '127.0.0.1',
+        user: 'root',
+        password: 'password',
+        database: 'corelifedb'
+    });
+
+    connection.connect((err) => {
+        if (err) {
+            console.log('Error connecting to DB: ');
+            console.log(err);
+            //throw err; // this will give u the stack trace & actual error msg  
+            return; 
+        }
+        console.log('line 240, Connected to MySQL DB!');
+
+    });
+ 
+    console.log('getQuestionInfo2, value of req.mysqlDB: ')
+    console.log(req.mysqlDb)
+    console.log('getQuestionInfo2, value of connection: ')
+    //console.log(connection) //this works ok!
+
+    // try manual query instead???
+    // queryDB(req, queryGetQuestionsByID, [args.q_id]).then(data => data[0])
+    // connection.query(queryGetBasicQuestions, 
+
+    //shodl await keyword go here, instead of a promise?
+    let temp1 = new Promise((resolve, reject) => {connection.query(queryGetQuestionsByID, [args.q_id], (err, rows) => {
+        if (err) {
+            return reject(err);
+        }
+        //how/wehre to add a .then()?
+        data => data[0]
+        console.log('next line 264')
+
+        // this is failing - Rethrow non-MySQL errors, then ReferenceError: resolve is not defined
+        rows.changedRows || rows.affectedRows || rows.insertId ? resolve(true) : resolve(rows);
+        // resolve(rows)
+
+        console.log('line 280: Data received from DB:');
+        console.log(rows);
+
+        //CURRENT ISSUE t30mar 2100 - how to get rows back to the caller or graphql console, insetad of hte node console?
+        //return rows
+        
+
+    //this throws error - TypeError: connection.query(...).then is not a function    
+    // }).then(data => data[0]) ;
+    });
+    });
+        console.log('line 293: whats temp1:');
+        console.log(temp1);
+    console.log('eof getQuestionInfo2');
+    //temp1 is pending!
+    return temp1;
+
+    //run query
+    // let temp = await queryDB(req, queryGetQuestionsByID, [args.q_id]).then(data => data[0])
+    // console.log(temp)
+    
+} 
+
+// var getQuestionInfo2 = ({q_id}) => {
+//     queryDB(req, queryGetQuestionsByID, [q_id]).then(data => data[0])
+// }
 
 //m29march Dav -  this is now working ok!
 // orange keywords id and topic probably have to match the schema above!
@@ -216,6 +324,8 @@ var updateQuestionVar = ({q_id, question}) => {
     return result;
 }
 
+
+
 // The root provides a resolver function for each API endpoint
 //these keywords on left of : are like the endpoint and MUST correspond with the keywords within the const/var schema on line 6 'var schema = buildSchema', while on the right are the variables which contain the results/callbacks of functions eg 'var getCourse' on line 91 etc
 // Dav root for Questions
@@ -223,7 +333,9 @@ const questionRoot = {
     question: getQuestion,
     questions: getQuestions,
     // updateQuestion: updateQuestionLabel
-    updateQuestion: updateQuestionVar
+    updateQuestion: updateQuestionVar,
+    getQuestionInfo: getQuestionInfo2
+    // getQuestionInfo: (args, req) => queryDB(req, queryGetQuestionsByID, [args.q_id]).then(data => data[0])
 };
 
 //how to output results of getLearners ? will get logged to Node console!
@@ -253,18 +365,22 @@ var rootDB = {
 };
 console.log('after var rootDB: ');
 console.log(JSON.stringify(rootDB, null, 2)); //obj is empty atm
-
+ 
 
 
 var app = express();
+app.use(bodyParser.json({type: 'application/json'}))
+app.use(bodyParser.urlencoded({extended: true}))
 
 // Route for CoreQuestion stuff
 // FYI rootValue is the graphqlResolvers above
-// rootValue: was questionRoot
+// rootValue: was questionRoot, now rootDB but doenst work - somthing is wrong withn rootDB stuff
+
 // ISSUES here as db isnt being connected to!
+//shoudlnt this be calling/opening the db connetion?
 app.use('/graphql', graphqlHTTP({
     schema: questionSchema,
-    rootValue: rootDB,
+    rootValue: questionRoot,
     // Enable the GraphiQL UI
     graphiql: {
         defaultQuery: "query {\n" +
@@ -279,6 +395,8 @@ app.use('/graphql', graphqlHTTP({
 
 
 // Database stuff t30march2021 - can call this by going to http://localhost:4004/
+// does db conn stuff need to be async??
+// Do i have to/am i suppposed to pass in req, resp when im calling thsi from the UI??
 app.use((req, res, next) => {
     req.mysqlDb = mysql.createConnection({
         host: '127.0.0.1',
@@ -295,6 +413,33 @@ app.use((req, res, next) => {
         console.log('Connected to MySQL DB!');
         });
     console.log('Line after DB is connected...'); // does this line get logged before DB connection is made, cos im not doing async await?
+
+
+    //maybe call sql queries from here??
+    let queryGetBasicQuestions = `
+    SELECT q_id, question, gp_order, points_type 
+    FROM ref_core_questions
+    `
+
+    // try manual query instead???
+    // req.mysqlDb.query(queryGetBasicQuestions, args, (err, rows) => {
+    //     if (err) {
+    //         return reject(err);
+    //     }
+    //     console.log('next line 388')
+    //     rows.changedRows || rows.affectedRows || rows.insertId ? resolve(true) : resolve(rows);
+    //     console.log('Data received from DB:');
+    //     console.log(rows);
+    // });
+
+//new stuf tues eve - test if db is being connected to
+    // req.mysqlDb.query(queryGetBasicQuestions, (err,rows) => {
+    // if(err) throw err;
+    //   console.log('Data received from DB:');
+    //   console.log(rows);
+    // });
+
+
     next();
 });
 
@@ -315,3 +460,6 @@ console.log('Running a GraphQL API server at http://localhost:4004/graphql for C
 
 // NOTES
 // instead of having multiplel end points, u only have 1 Endpoint and u can ask for whatever u want from it ie theres one single 'smart' endpoint, generally used to serve data in json format
+
+//how to log an object
+// console.log(JSON.stringify(rootDB, null, 2)); 
