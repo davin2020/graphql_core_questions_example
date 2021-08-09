@@ -12,14 +12,16 @@ jobs:
   build:
         
     # how to get it to run on both win and ubuntu?
-    runs-on:  [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    #runs-on:  [windows-latest, ubuntu-latest]
 
     strategy:
       matrix:
+        os: [ubuntu-latest, windows-latest]
         node-version: [12.x, 14.x, 16.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
         # added this extra line here, as its part of matrix section - prob need some unit test!
-        targetplatform: [x86, x64]
+        # targetplatform: [x86, x64]
 
     steps:
     - uses: actions/checkout@v2
