@@ -12,7 +12,7 @@ jobs:
   build:
         
     # how to get it to run on both win and ubuntu?
-    runs-on:  windows-latest
+    runs-on:  [windows-latest, ubuntu-latest]
 
     strategy:
       matrix:
