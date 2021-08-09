@@ -1,0 +1,36 @@
+# work flow is part Davin and part existing Node template
+# This workflow will do a clean install of node dependencies, cache/restore them, build the source code and run tests across different versions of node
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+
+name: Node.js CI
+
+on:
+  pull_request:
+    branches: [ pre_main ]
+
+jobs:
+  build:
+        
+    # how to get it to run on both win and ubuntu?
+    runs-on: ${{ matrix.os }}
+    #runs-on:  [windows-latest, ubuntu-latest]
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node-version: [12.x, 14.x, 16.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+        # added this extra line here, as its part of matrix section - prob need some unit test!
+        # targetplatform: [x86, x64]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    - run: npm ci
+    - run: npm run build --if-present
+    - run: npm test
+    - run: echo "This job's status is ${{ job.status }}."
