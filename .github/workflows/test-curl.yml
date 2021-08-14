@@ -8,14 +8,19 @@ on:
 jobs:
   curl:
  
-    runs-on:  windows-latest
+    runs-on:  [windows-latest, ubuntu-latest]
+        
+    strategy:
+      matrix:
+        node-version: [12.x, 14.x, 16.x]
         
     steps:
     - uses: actions/checkout@v2
     - name: curl 
       uses: actions/setup-node@v2
-      cache: 'npm'
-        with:
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
         args: -X POST http://codechallenge.ents24.com
     - run: npm ci
     - run: npm run build --if-present
