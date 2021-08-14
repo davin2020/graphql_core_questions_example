@@ -1,5 +1,5 @@
 # workflow to test curl
-name: Node.js CI
+name: First Curl Test
 
 on:
   pull_request:
