@@ -1,0 +1,33 @@
+# workflow to test curl
+name: First Curl Test
+
+on:
+  push:
+    branches: [ pre_main ]
+
+jobs:
+  curl:
+ 
+    runs-on:  ${{ matrix.os }}
+        
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node-version: [12.x, 14.x, 16.x]
+        
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use curl ${{ matrix.node-version }} 
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        args: -X POST http://codechallenge.ents24.com
+    - run: npm ci
+    - run: npm run build --if-present
+    # show commit sha hash
+    - run: echo "This job's commit sha is take1 $GITHUB_SHA ."
+    - run: echo "This job's commit sha is take2 ${{ github.sha }} ."
+    # run curl here?
+    #- run: npm test
+    - run: echo "This job's status is ${{ job.status }}."

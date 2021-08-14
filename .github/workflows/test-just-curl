@@ -1,0 +1,19 @@
+name: Test Just Curl
+
+on:
+  pull_request:
+    branches: [ pre_main ]
+
+jobs:
+  curl:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: curl test-just-curl.yml
+      uses: wei/curl@master
+      with:
+        args: https://httpbin.org/get
+    - run: echo "This job's commit sha is take2 ${{ github.sha }} ."
+    - run: echo "This job's status is ${{ job.status }}."  
+        
+        
