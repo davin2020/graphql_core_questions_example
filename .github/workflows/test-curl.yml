@@ -1,0 +1,26 @@
+# workflow to test curl
+name: Node.js CI
+
+on:
+  pull_request:
+    branches: [ pre_main ]
+
+jobs:
+  curl:
+ 
+    runs-on:  windows-latest
+        
+    steps:
+    - uses: actions/checkout@v2
+    - name: curl 
+      uses: actions/setup-node@v2
+      cache: 'npm'
+        with:
+        args: -X POST http://codechallenge.ents24.com
+    - run: npm ci
+    - run: npm run build --if-present
+    # show commit sha hash
+    - run: echo "This job's commit sha is ${{ $GITHUB_SHA }}."
+    # run curl here?
+    #- run: npm test
+    - run: echo "This job's status is ${{ job.status }}."
