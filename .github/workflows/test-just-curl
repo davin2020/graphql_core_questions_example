@@ -1,0 +1,14 @@
+name: Test Just Curl
+
+on:
+  pull_request:
+    branches: [ pre_main ]
+
+jobs:
+  curl:
+    runs-on: ubuntu-latest
+    steps:
+    - name: curl
+      uses: wei/curl@master
+      with:
+        args: https://httpbin.org/get
