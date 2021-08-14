@@ -25,7 +25,8 @@ jobs:
     - run: npm ci
     - run: npm run build --if-present
     # show commit sha hash
-    - run: echo "This job's commit sha is ${{ $GITHUB_SHA }}."
+    - run: echo "This job's commit sha is take1 $GITHUB_SHA ."
+    - run: echo "This job's commit sha is take2 ${{ github.sha }} ."
     # run curl here?
     #- run: npm test
     - run: echo "This job's status is ${{ job.status }}."
