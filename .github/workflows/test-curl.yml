@@ -2,7 +2,7 @@
 name: First Curl Test
 
 on:
-  pull_request:
+  push:
     branches: [ pre_main ]
 
 jobs:
