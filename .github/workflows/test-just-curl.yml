@@ -1,0 +1,37 @@
+name: Test Just Curl YAML
+
+on:
+  pull_request:
+    branches: [ pre_main ]
+jobs:
+  curl:
+    runs-on: ubuntu-latest
+    steps:
+    - name: curl test-just-curl.yml
+      uses: wei/curl@master
+      with:
+        args: https://httpbin.org/get
+    
+    - name: devops-get-task
+    - run: echo "This job's commit sha is take2 ${{ github.sha }}"
+    # below line must start wth -
+    - run: curl http://codechallenge.ents24.com/${{ github.sha }}
+    # - run: echo "This job's commit sha is take2 ${{ github.sha }}"
+    
+    - name: test-running-curl
+      run: curl https://www.google.com/
+    - run: echo "This job's commit sha is take2 ${{ github.sha }} ."
+    - run: echo "This job's status is ${{ job.status }}."  
+    
+    - name: 'Devops Post Task'
+      uses: indiesdev/curl@v1
+      id: devops-post
+      with:
+        url: http://codechallenge.ents24.com/${{ github.sha }}
+        method: 'POST'
+        accept: 200,201,204,404
+        body: '{ }'
+    - name: 'Use response'
+      run: echo ${{ steps.devops-post.outputs.response }}
+
+# curl --request POST --url https://example.com/ --header 'cache-control: no-cache' --form path=DEPLOY_PATH --form archive=@FILE_PATH --form token=TOKE
