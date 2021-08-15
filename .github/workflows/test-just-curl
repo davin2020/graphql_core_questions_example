@@ -1,0 +1,31 @@
+name: Test Just Curl YAML
+
+on:
+  pull_request:
+    branches: [ pre_main ]
+    
+jobs:
+  curl:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: curl test-just-curl.yml
+      uses: wei/curl@master
+      with:
+        args: https://httpbin.org/get
+    - name: test-running-curl
+      run: curl https://www.google.com/
+    - run: echo "This job's commit sha is take2 ${{ github.sha }} ."
+    - run: echo "This job's status is ${{ job.status }}."  
+    
+    - name: 'Call API'
+      uses: indiesdev/curl@v1
+      id: api
+      with:
+        url: https://reqres.in/api/users
+        method: 'GET'
+        accept: 200,201,204
+    - name: 'Use response'
+      run: echo ${{ steps.api.outputs.response }}
+
+# curl --request POST --url https://example.com/ --header 'cache-control: no-cache' --form path=DEPLOY_PATH --form archive=@FILE_PATH --form token=TOKE
