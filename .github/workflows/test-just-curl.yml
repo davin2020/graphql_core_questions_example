@@ -15,16 +15,19 @@ jobs:
     - name: devops-get-task
       run: curl http://codechallenge.ents24.com/${{ github.sha }}
     - run: echo "This job's commit sha is take2 ${{ github.sha }} ."
+    - run: echo "git_hash=$(git rev-parse --short '$GITHUB_SHA')"  >> $GITHUB_HASH
     - run: echo "This job's status is ${{ job.status }}."  
     
-    - name: 'Call API'
+    - name: 'Devops Post Task'
+      # cant use uses and runs together !
       uses: indiesdev/curl@v1
-      id: api
+      id: devops-post
       with:
-        url: https://reqres.in/api/users
-        method: 'GET'
-        accept: 200,201,204
+        url: http://codechallenge.ents24.com/${{ github.sha }}
+        method: 'POST'
+        accept: 200,201,204, 404
+        body: '{ }'
     - name: 'Use response'
-      run: echo ${{ steps.api.outputs.response }}
+      run: echo ${{ steps.devops-post.outputs.response }}
 
 # curl --request POST --url https://example.com/ --header 'cache-control: no-cache' --form path=DEPLOY_PATH --form archive=@FILE_PATH --form token=TOKE
