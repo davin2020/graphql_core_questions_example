@@ -8,7 +8,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: post-show-commit
-      run: echo "This job's commit sha is take4 ${{ github.sha }}"
+    # trying shorter sha syntax, but why does each run line need its own hyphen??
+    - run: echo "This job's commit sha is take55, git_hash=$(git rev-parse --short \"$GITHUB_SHA\")" 
+    - run: echo "This job's commit sha is take4 ${{ github.sha }}"
     
     - name: POST CURL test-just-curl.yml
       uses: wei/curl@master
