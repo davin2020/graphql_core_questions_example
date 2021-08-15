@@ -7,13 +7,17 @@ jobs:
   curl:
     runs-on: ubuntu-latest
     steps:
-    - name: curl test-just-curl.yml
+    - name: post-show-commit
+      run: echo "This job's commit sha is take4 ${{ github.sha }}"
+    
+    - name: POST CURL test-just-curl.yml
       uses: wei/curl@master
       with:
-        args: https://httpbin.org/get
+        # args: https://httpbin.org/get
+        args: -X POST http://codechallenge.ents24.com/${{ github.sha }}
     
     - name: show-commit
-      run: echo "This job's commit sha is take3, git_hash=$(git rev-parse --short '$GITHUB_SHA')" 
+      run: echo "This job's commit sha is take3, git_hash=$(git rev-parse --short \"$GITHUB_SHA\")" 
     - run: echo "hello"
     
     - name: 'Devops Post Task'
