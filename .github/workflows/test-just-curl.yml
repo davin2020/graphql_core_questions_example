@@ -11,12 +11,6 @@ jobs:
       uses: wei/curl@master
       with:
         args: https://httpbin.org/get
-        
-    - name: devops-get-task
-      run: curl http://codechallenge.ents24.com/${{ github.sha }}
-    - run: echo "This job's commit sha is take2 ${{ github.sha }} ."
-    - run: echo "git_hash=$(git rev-parse --short '$GITHUB_SHA')"  >> $GITHUB_HASH
-    - run: echo "This job's status is ${{ job.status }}."  
     
     - name: 'Devops Post Task'
       # cant use uses and runs together !
@@ -29,5 +23,11 @@ jobs:
         body: '{ }'
     - name: 'Use response'
       run: echo ${{ steps.devops-post.outputs.response }}
+      
+    - name: devops-get-task
+      run: curl http://codechallenge.ents24.com/${{ github.sha }}
+    - run: echo "This job's commit sha is take2 ${{ github.sha }} ."
+    - run: echo "git_hash=$(git rev-parse --short '$GITHUB_SHA')" 
+    - run: echo "This job's status is ${{ job.status }}." 
 
 # curl --request POST --url https://example.com/ --header 'cache-control: no-cache' --form path=DEPLOY_PATH --form archive=@FILE_PATH --form token=TOKE
