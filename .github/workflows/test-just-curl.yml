@@ -12,8 +12,12 @@ jobs:
       with:
         args: https://httpbin.org/get
     
+    - name: show-commit
+    - run: echo "This job's commit sha is take2 ${{ github.sha }} ."
+    - run: echo "git_hash=$(git rev-parse --short '$GITHUB_SHA')" 
+    
     - name: 'Devops Post Task'
-      # cant use uses and runs together !
+      # cant use uses and runs echo together !
       uses: indiesdev/curl@v1
       id: devops-post
       with:
