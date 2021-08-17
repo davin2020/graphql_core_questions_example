@@ -2,7 +2,7 @@ name: Test Just Curl YAML
 
 on:
   pull_request:
-    branches: [ pre_main ]
+    branches: [ pre_main, dav-test-curl3 ]
 jobs:
   curl:
     runs-on: ubuntu-latest
