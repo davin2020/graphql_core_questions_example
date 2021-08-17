@@ -1,0 +1,22 @@
+name: Test Curl OS Matrix
+
+on:
+  pull_request:
+    branches: [ pre_main ]
+jobs:
+  curl:
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        
+    steps:
+    - name: matrix-post-show-commit
+      run: echo "This job's commit sha is take66, ${{ github.sha }}" 
+    
+    - name: MATRIX POST CURL test-just-curl.yml
+      uses: wei/curl@master
+      with:
+        args: -X POST http://codechallenge.ents24.com/${{ github.sha }}
+    - run: echo "This job's commit sha is take6 ${{ github.sha }}"
